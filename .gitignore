@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+.env
+*.db
+uploads/
+instance/
+*.sqlite3
+PRD.MD

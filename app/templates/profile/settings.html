@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Profile Info</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Name:</strong> {{ current_user.name }}</p>
+                <p><strong>Email:</strong> {{ current_user.email }}</p>
+                <p>
+                    <strong>Role:</strong>
+                    <span class="badge bg-primary">{{ current_user.role }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Your Gemini API Key</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('profile.settings') }}">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        <label class="form-label d-block">Current Key Status</label>
+                        {% if current_user.has_api_key() %}
+                        <span class="badge bg-success p-2 mb-3">
+                            <i class="bi bi-check-circle me-1"></i> Key saved
+                        </span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark p-2 mb-3">
+                            <i class="bi bi-exclamation-triangle me-1"></i> Not set
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.gemini_api_key.label(class="form-label") }}
+                        {{ form.gemini_api_key(class="form-control", placeholder="Enter your Gemini API key") }}
+                        {% for error in form.gemini_api_key.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Your API key is used only to power your chat sessions and is
+                            stored securely for your use only.
+                        </small>
+                    </div>
+                    <div class="mb-5">
+                        <small>Need a key? <a href="https://aistudio.google.com/app/apikey" target="_blank">Get your
+                                free API key at Google AI Studio</a></small>
+                    </div>
+
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+
+                {% if current_user.has_api_key() %}
+                <hr class="my-4">
+                <form method="POST" action="{{ url_for('profile.delete_key') }}"
+                    onsubmit="return confirm('Are you sure you want to delete your API key? You will not be able to chat with documents until you provide a new one.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="bi bi-trash"></i> Delete API Key
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
