@@ -1,55 +1,108 @@
 # Document Q&A Chatbot
 
-A full-stack web application that allows users to query their documents using a LangChain + Pinecone + Gemini RAG pipeline.
+A full-stack web application that allows users to securely upload documents (PDF, TXT, DOCX), convert them into local vector embeddings using FAISS (or Pinecone), and chat with them using Google's powerful Gemini 2.5 Flash API with context-aware RAG.
 
 ## Features
 - Ask questions to your PDF, TXT, or DOCX documents with context-aware RAG.
 - Per-user Gemini API Key settings stored securely.
 - "Global" documents uploaded by admins for all users.
 - Private documents uploaded by standard users.
-- Pinecone Serverless integration for vector search.
+- Vector embeddings using FAISS (local) or Pinecone Serverless.
 - Complete conversation history per chat session.
 - Google OAuth login integration and normal credentials auth.
-
-## Setup Requirements
-
-1. Python 3.9+
-2. A free Pinecone account (pinecone.io) for vector storage
-3. Google OAuth App in Google Cloud Console
-4. A free Gemini API Key from Google AI Studio (provided per-user in the app UI)
-
-## Installation Guide
-
-1. Clone this repository or use the directory.
-2. Initialize virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Linux/macOS
-   venv\Scripts\activate     # On Windows
-   ```
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Configure the `.env` file with your Pinecone configuration and Google OAuth keys.
-5. Create the Pinecone index (dimension 3072 is required):
-   ```bash
-   python scripts/create_pinecone_index.py
-   ```
-6. Run the database migrations with Flask:
-   ```bash
-   flask db upgrade
-   ```
-7. Start the application:
-   ```bash
-   python run.py
-   ```
-8. The app will be available at `http://localhost:5000`.
 
 ## Architecture
 - **Framework**: Flask (Python)
 - **Database**: SQLite with SQLAlchemy (ORM)
 - **UI**: Bootstrap 5 + Jinja2 Templates
 - **LLM/Embeddings**: Google Gemini API & Generative AI Embeddings
-- **Vector Database**: Pinecone
+- **Vector Database**: FAISS / Pinecone
 - **RAG orchestration**: LangChain
+
+---
+
+## Setup Guide
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+- **Python 3.9+** (Ensure `pip` is also installed)
+- **Git** (for version control)
+
+You will also need:
+- A Free Google Gemini API Key: [Get yours here](https://aistudio.google.com/app/apikey)
+- A Free Google OAuth Client (if using Google Login)
+- *(Optional)* A free Pinecone account (pinecone.io) if using Pinecone instead of local FAISS storage.
+
+### Installation Instructions
+
+#### 1. Clone the Repository
+Clone this repository to your local machine and navigate into the directory:
+```bash
+git clone <your-repo-url>
+cd python-project
+```
+
+#### 2. Set up a Virtual Environment
+It is highly recommended to use a virtual environment to manage dependencies.
+```bash
+# Windows
+python -m venv venv
+.\venv\Scripts\activate
+
+# macOS / Linux
+python3 -m venv venv
+source venv/bin/activate
+```
+
+#### 3. Install Dependencies
+Install all the required Python packages from the requirements file:
+```bash
+pip install -r requirements.txt
+```
+
+#### 4. Configure Environment Variables
+Create a file named `.env` in the root directory of the project. Your `.env` file should look like this:
+
+```ini
+# Flask Security Key
+SECRET_KEY=your_secure_random_string_here
+
+# Google OAuth Credentials (for Login)
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+
+# Database URI (defaults to SQLite if omitted)
+# DATABASE_URL=sqlite:///instance/docchat.db
+
+# (Optional) Pinecone config if using Pinecone
+# PINECONE_API_KEY=your_pinecone_api_key
+```
+
+#### 5. Initialize the Database
+Set up the SQLite database and create the required tables:
+```bash
+flask db init
+flask db migrate -m "Initial migration"
+flask db upgrade
+```
+
+*(Optional)* If using Pinecone, create the Pinecone index (dimension 3072 is required):
+```bash
+python scripts/create_pinecone_index.py
+```
+
+#### 6. Run the Application
+Start the Flask development server:
+```bash
+python run.py
+```
+
+The application will now be running at `http://127.0.0.1:5000/`.
+
+### Post-Installation
+
+1. **Register an Account:** Go to `http://127.0.0.1:5000/register` and create an account.
+2. **Add your API Key:** Once logged in, navigate to **Settings** and input your Gemini API Key.
+3. **Upload Documents:** Go to **My Documents** and upload a PDF, DOCX, or TXT file. The system will automatically chunk and vectorize it.
+4. **Chat:** Navigate to the **Chat** tab, select your uploaded document, and start asking questions!
