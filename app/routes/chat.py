@@ -10,8 +10,8 @@ chat_bp = Blueprint('chat', __name__)
 @chat_bp.route('/', methods=['GET'])
 @login_required
 def index():
-    if not current_user.has_api_key():
-        flash("Please add your Gemini API key in Settings first.", "warning")
+    if not current_user.has_api_key() or not current_user.has_pinecone_configured():
+        flash("Please add your API keys in Settings first.", "warning")
         return redirect(url_for('profile.settings'))
 
     conversation_id = request.args.get('conversation_id', type=int)
@@ -44,7 +44,8 @@ def index():
 @chat_bp.route('/start', methods=['POST'])
 @login_required
 def start():
-    if not current_user.has_api_key():
+    if not current_user.has_api_key() or not current_user.has_pinecone_configured():
+        flash("Please add your API keys in Settings first.", "warning")
         return redirect(url_for('profile.settings'))
         
     selected_ids = request.form.getlist('document_ids')
@@ -106,7 +107,9 @@ def message():
             content, 
             conversation.document_ids, 
             history, 
-            current_user.gemini_api_key
+            current_user.gemini_api_key,
+            current_user.pinecone_api_key,
+            current_user.pinecone_index_name
         )
         
         bot_msg = ChatMessage(
@@ -154,6 +157,8 @@ def stream():
 
     # Extract api key before generator starts (since generator loses request context in some WSGI servers)
     api_key = current_user.gemini_api_key
+    pinecone_api_key = current_user.pinecone_api_key
+    pinecone_index_name = current_user.pinecone_index_name
     user_id = current_user.id
     from flask import current_app, copy_current_request_context
     app_context = current_app.app_context()
@@ -170,7 +175,9 @@ def stream():
                     content, 
                     conversation.document_ids, 
                     history, 
-                    api_key
+                    api_key,
+                    pinecone_api_key,
+                    pinecone_index_name
                 ):
                     final_sources = sources
                     if chunk_content:

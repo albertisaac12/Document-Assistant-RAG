@@ -31,8 +31,8 @@ def manage():
 def upload():
     form = UploadDocumentForm()
     if form.validate_on_submit():
-        if not current_user.has_api_key():
-            flash("You need a Gemini API key to upload and process documents. Add your key in Settings.", "warning")
+        if not current_user.has_api_key() or not current_user.has_pinecone_configured():
+            flash("You need Gemini and Pinecone API keys configured to upload and process documents. Add your keys in Settings.", "warning")
             return redirect(url_for('profile.settings'))
 
         file = form.document.data
@@ -61,7 +61,14 @@ def upload():
         db.session.commit()
 
         try:
-            chunks_created = ingest_document(file_path, doc.id, ext, current_user.gemini_api_key)
+            chunks_created = ingest_document(
+                file_path, 
+                doc.id, 
+                ext, 
+                current_user.gemini_api_key, 
+                current_user.pinecone_api_key, 
+                current_user.pinecone_index_name
+            )
             doc.status = 'ready'
             doc.chunk_count = chunks_created
         except Exception as e:
@@ -88,7 +95,7 @@ def delete(id):
         return redirect(url_for('documents.manage'))
         
     try:
-        delete_document_vectors(doc.id)
+        delete_document_vectors(doc.id, current_user.pinecone_api_key, current_user.pinecone_index_name)
     except Exception as e:
         print(f"Pinecone delete failed: {e}")
         

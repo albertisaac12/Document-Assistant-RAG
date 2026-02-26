@@ -3,42 +3,43 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-5">
-        <div class="card shadow-sm mt-5">
-            <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4">Log In</h3>
+        <div class="card shadow-lg mt-5 border-0" style="background: var(--card-bg); backdrop-filter: blur(20px);">
+            <div class="card-body p-5">
+                <h3 class="card-title text-center mb-4 fw-bold">Log In</h3>
                 <form method="POST" action="{{ url_for('auth.login') }}">
                     {{ form.hidden_tag() }}
-                    <div class="mb-3">
-                        {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control") }}
+                    <div class="mb-4">
+                        {{ form.email.label(class="form-label text-muted small text-uppercase fw-bold") }}
+                        {{ form.email(class="form-control form-control-lg") }}
                         {% for error in form.email.errors %}
-                        <div class="text-danger small">{{ error }}</div>
+                        <div class="text-danger small mt-1">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="mb-3">
-                        {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control") }}
+                    <div class="mb-4">
+                        {{ form.password.label(class="form-label text-muted small text-uppercase fw-bold") }}
+                        {{ form.password(class="form-control form-control-lg") }}
                         {% for error in form.password.errors %}
-                        <div class="text-danger small">{{ error }}</div>
+                        <div class="text-danger small mt-1">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="d-grid mt-4">
-                        {{ form.submit(class="btn btn-primary") }}
+                    <div class="d-grid mt-5">
+                        {{ form.submit(class="btn btn-primary btn-lg rounded-pill") }}
                     </div>
                 </form>
 
-                <div class="text-center mt-3 mb-3">
-                    <span class="text-muted">or</span>
+                <div class="position-relative text-center my-4">
+                    <hr class="text-muted opacity-25">
+                    <span class="position-absolute top-50 start-50 translate-middle px-3 small text-muted text-uppercase fw-bold" style="background: var(--bg-base);">OR</span>
                 </div>
 
-                <div class="d-grid">
-                    <a href="{{ url_for('auth.google_auth') }}" class="btn btn-outline-dark">
-                        <i class="bi bi-google me-2"></i>Sign in with Google
+                <div class="d-grid mt-4">
+                    <a href="{{ url_for('auth.google_auth') }}" class="btn btn-outline-light btn-lg rounded-pill d-flex align-items-center justify-content-center" style="border-color: var(--border-color); color: var(--text-color);">
+                        <i class="bi bi-google me-2 fs-5"></i><span class="fw-semibold">Sign in with Google</span>
                     </a>
                 </div>
 
-                <div class="text-center mt-4">
-                    <p class="mb-0">Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a>
+                <div class="text-center mt-5">
+                    <p class="mb-0 text-muted">Don't have an account? <a href="{{ url_for('auth.register') }}" class="fw-bold text-decoration-none" style="color: var(--brand-secondary);">Register here</a>
                     </p>
                 </div>
             </div>

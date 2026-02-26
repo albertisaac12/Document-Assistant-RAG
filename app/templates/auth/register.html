@@ -3,45 +3,46 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-5">
-        <div class="card shadow-sm mt-5">
-            <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4">Register</h3>
+        <div class="card shadow-lg mt-5 border-0" style="background: var(--card-bg); backdrop-filter: blur(20px);">
+            <div class="card-body p-5">
+                <h3 class="card-title text-center mb-4 fw-bold">Register</h3>
                 <form method="POST" action="{{ url_for('auth.register') }}">
                     {{ form.hidden_tag() }}
-                    <div class="mb-3">
-                        {{ form.name.label(class="form-label") }}
-                        {{ form.name(class="form-control") }}
+                    <div class="mb-4">
+                        {{ form.name.label(class="form-label text-muted small text-uppercase fw-bold") }}
+                        {{ form.name(class="form-control form-control-lg") }}
                         {% for error in form.name.errors %}
-                        <div class="text-danger small">{{ error }}</div>
+                        <div class="text-danger small mt-1">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="mb-3">
-                        {{ form.email.label(class="form-label") }}
-                        {{ form.email(class="form-control") }}
+                    <div class="mb-4">
+                        {{ form.email.label(class="form-label text-muted small text-uppercase fw-bold") }}
+                        {{ form.email(class="form-control form-control-lg") }}
                         {% for error in form.email.errors %}
-                        <div class="text-danger small">{{ error }}</div>
+                        <div class="text-danger small mt-1">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="mb-3">
-                        {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control") }}
+                    <div class="mb-4">
+                        {{ form.password.label(class="form-label text-muted small text-uppercase fw-bold") }}
+                        {{ form.password(class="form-control form-control-lg") }}
                         {% for error in form.password.errors %}
-                        <div class="text-danger small">{{ error }}</div>
+                        <div class="text-danger small mt-1">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="mb-3">
-                        {{ form.confirm_password.label(class="form-label") }}
-                        {{ form.confirm_password(class="form-control") }}
+                    <div class="mb-4">
+                        {{ form.confirm_password.label(class="form-label text-muted small text-uppercase fw-bold") }}
+                        {{ form.confirm_password(class="form-control form-control-lg") }}
                         {% for error in form.confirm_password.errors %}
-                        <div class="text-danger small">{{ error }}</div>
+                        <div class="text-danger small mt-1">{{ error }}</div>
                         {% endfor %}
                     </div>
-                    <div class="d-grid mt-4">
-                        {{ form.submit(class="btn btn-success") }}
+                    <div class="d-grid mt-5">
+                        {{ form.submit(class="btn btn-primary btn-lg rounded-pill") }}
                     </div>
                 </form>
-                <div class="text-center mt-4">
-                    <p class="mb-0">Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a></p>
+                <div class="text-center mt-5">
+                    <p class="mb-0 text-muted">Already have an account? <a href="{{ url_for('auth.login') }}"
+                            class="fw-bold text-decoration-none" style="color: var(--brand-secondary);">Log in</a></p>
                 </div>
             </div>
         </div>

@@ -10,9 +10,15 @@ profile_bp = Blueprint('profile', __name__)
 def settings():
     form = ApiKeyForm()
     if form.validate_on_submit():
-        current_user.gemini_api_key = form.gemini_api_key.data.strip()
+        if form.gemini_api_key.data:
+            current_user.gemini_api_key = form.gemini_api_key.data.strip()
+        if form.pinecone_api_key.data:
+            current_user.pinecone_api_key = form.pinecone_api_key.data.strip()
+        if form.pinecone_index_name.data:
+            current_user.pinecone_index_name = form.pinecone_index_name.data.strip()
+            
         db.session.commit()
-        flash('API key saved successfully.', 'success')
+        flash('Settings saved successfully.', 'success')
         return redirect(url_for('profile.settings'))
         
     return render_template('profile/settings.html', form=form)

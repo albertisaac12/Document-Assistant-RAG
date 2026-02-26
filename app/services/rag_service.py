@@ -1,17 +1,17 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.vectorstores import FAISS
+from langchain_pinecone import PineconeVectorStore
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
+from pinecone import Pinecone, ServerlessSpec
 import os
 import shutil
-
-# To store local FAISS databases per document
-FAISS_STORAGE_PATH = "instance/faiss_indexes"
+import time
 
 # Global embeddings instance (loads into memory once, avoids reloading)
 # all-MiniLM-L6-v2 is fast and small
 _embeddings = None
+_checked_indexes = set()
 
 def get_embeddings():
     """Return HuggingFaceEmbeddings using local model."""
@@ -19,6 +19,46 @@ def get_embeddings():
     if _embeddings is None:
         _embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     return _embeddings
+
+def ensure_pinecone_index(api_key, index_name):
+    if not api_key or not index_name:
+        return
+        
+    cache_key = f"{api_key}:{index_name}"
+    if cache_key in _checked_indexes:
+        return
+        
+    pc = Pinecone(api_key=api_key)
+    embeddings = get_embeddings()
+    test_vector = embeddings.embed_query("test")
+    dim = len(test_vector)
+    
+    existing_indexes = [index_info["name"] for index_info in pc.list_indexes()]
+    
+    if index_name not in existing_indexes:
+        print(f"Creating Pinecone index '{index_name}' with dimension {dim}...")
+        pc.create_index(
+            name=index_name,
+            dimension=dim,
+            metric="cosine",
+            spec=ServerlessSpec(cloud="aws", region="us-east-1")
+        )
+        time.sleep(5)
+    else:
+        desc = pc.describe_index(index_name)
+        if desc.dimension != dim:
+            print(f"Dimension mismatch! Recreating index '{index_name}' with dimension {dim}...")
+            pc.delete_index(index_name)
+            pc.create_index(
+                name=index_name,
+                dimension=dim,
+                metric="cosine",
+                spec=ServerlessSpec(cloud="aws", region="us-east-1")
+            )
+            time.sleep(5)
+            
+    _checked_indexes.add(cache_key)
+
 
 def get_llm(api_key):
     """Return ChatGoogleGenerativeAI using the provided API key."""
@@ -30,11 +70,8 @@ def get_llm(api_key):
         convert_system_message_to_human=True
     )
 
-def _get_index_path(document_id):
-    return os.path.join(FAISS_STORAGE_PATH, str(document_id))
-
-def ingest_document(file_path, document_id, file_type, api_key):
-    """Load, chunk, embed and store document in local FAISS."""
+def ingest_document(file_path, document_id, file_type, gemini_api_key, pinecone_api_key, pinecone_index_name):
+    """Load, chunk, embed and store document in Pinecone."""
     loaders = {
         'pdf': PyPDFLoader,
         'txt': TextLoader,
@@ -56,34 +93,35 @@ def ingest_document(file_path, document_id, file_type, api_key):
         chunk.metadata['document_id'] = str(document_id)
 
     embeddings = get_embeddings()
+    ensure_pinecone_index(pinecone_api_key, pinecone_index_name)
     
-    # Store directly in a document-specific FAISS index
-    index_path = _get_index_path(document_id)
-    os.makedirs(FAISS_STORAGE_PATH, exist_ok=True)
-    
-    vectorstore = FAISS.from_documents(chunks, embeddings)
-    vectorstore.save_local(index_path)
+    # Store in Pinecone, using document_id as namespace
+    PineconeVectorStore.from_documents(
+        chunks,
+        embeddings,
+        pinecone_api_key=pinecone_api_key,
+        index_name=pinecone_index_name,
+        namespace=str(document_id)
+    )
     
     return len(chunks)
 
-def query_documents(user_message, document_ids, conversation_history, api_key):
+def query_documents(user_message, document_ids, conversation_history, gemini_api_key, pinecone_api_key, pinecone_index_name):
     """Query one or more documents and get Gemini response.
     document_ids: list of Document.id integers to search across.
     Returns (answer_string, list_of_source_filenames)."""
 
     embeddings = get_embeddings()
+    ensure_pinecone_index(pinecone_api_key, pinecone_index_name)
     all_docs = []
 
-    # Search each document's FAISS index separately and combine results
+    # Search each document's Pinecone namespace separately and combine results
     for doc_id in document_ids:
-        index_path = _get_index_path(doc_id)
-        if not os.path.exists(index_path):
-            continue
-            
-        vectorstore = FAISS.load_local(
-            index_path, 
-            embeddings,
-            allow_dangerous_deserialization=True # Required when loading local files you created
+        vectorstore = PineconeVectorStore(
+            index_name=pinecone_index_name,
+            pinecone_api_key=pinecone_api_key,
+            embedding=embeddings,
+            namespace=str(doc_id)
         )
         retriever = vectorstore.as_retriever(search_kwargs={"k": 20})
         results = retriever.invoke(user_message)
@@ -118,29 +156,27 @@ CONVERSATION HISTORY:
 User: {user_message}
 Assistant:"""
 
-    llm = get_llm(api_key)
+    llm = get_llm(gemini_api_key)
     response = llm.invoke(prompt)
     return response.content, sources
 
 
-def query_documents_stream(user_message, document_ids, conversation_history, api_key):
+def query_documents_stream(user_message, document_ids, conversation_history, gemini_api_key, pinecone_api_key, pinecone_index_name):
     """Query one or more documents and yield Gemini response chunks.
     document_ids: list of Document.id integers to search across.
     Yields (chunk_str, list_of_source_filenames) as a tuple for each chunk."""
 
     embeddings = get_embeddings()
+    ensure_pinecone_index(pinecone_api_key, pinecone_index_name)
     all_docs = []
 
-    # Search each document's FAISS index separately and combine results
+    # Search each document's Pinecone namespace separately and combine results
     for doc_id in document_ids:
-        index_path = _get_index_path(doc_id)
-        if not os.path.exists(index_path):
-            continue
-            
-        vectorstore = FAISS.load_local(
-            index_path, 
-            embeddings,
-            allow_dangerous_deserialization=True 
+        vectorstore = PineconeVectorStore(
+            index_name=pinecone_index_name,
+            pinecone_api_key=pinecone_api_key,
+            embedding=embeddings,
+            namespace=str(doc_id)
         )
         retriever = vectorstore.as_retriever(search_kwargs={"k": 20})
         results = retriever.invoke(user_message)
@@ -175,7 +211,7 @@ CONVERSATION HISTORY:
 User: {user_message}
 Assistant:"""
 
-    llm = get_llm(api_key)
+    llm = get_llm(gemini_api_key)
     
     # Send an initial chunk containing just the sources so the frontend can display them immediately
     yield ("", sources)
@@ -184,8 +220,12 @@ Assistant:"""
         if chunk.content:
             yield (chunk.content, sources)
 
-def delete_document_vectors(document_id):
-    """Delete all local FAISS vectors for a document."""
-    index_path = _get_index_path(document_id)
-    if os.path.exists(index_path):
-        shutil.rmtree(index_path)
+def delete_document_vectors(document_id, pinecone_api_key, pinecone_index_name):
+    """Delete all Pinecone vectors for a document."""
+    pc = Pinecone(api_key=pinecone_api_key)
+    try:
+        index = pc.Index(pinecone_index_name)
+        # Delete the entire namespace
+        index.delete(delete_all=True, namespace=str(document_id))
+    except Exception as e:
+        print(f"Error deleting vectors from Pinecone: {e}")

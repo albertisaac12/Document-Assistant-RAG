@@ -3,78 +3,137 @@
 {% block content %}
 <div class="row">
     <div class="col-md-4 mb-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-header bg-white">
-                <h5 class="mb-0">Profile Info</h5>
+        <div class="card shadow-lg h-100 border-0 rounded-4"
+            style="background: var(--card-bg); backdrop-filter: blur(20px);">
+            <div class="card-header bg-transparent border-bottom py-4 px-4"
+                style="border-color: var(--border-color) !important;">
+                <h4 class="mb-0 fw-bold d-flex align-items-center">
+                    <i class="bi bi-person-badge text-primary me-2"></i> Profile Info
+                </h4>
             </div>
-            <div class="card-body">
-                <p><strong>Name:</strong> {{ current_user.name }}</p>
-                <p><strong>Email:</strong> {{ current_user.email }}</p>
-                <p>
-                    <strong>Role:</strong>
-                    <span class="badge bg-primary">{{ current_user.role }}</span>
-                </p>
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <label class="text-muted small text-uppercase fw-bold mb-1">Name</label>
+                    <p class="fs-5 fw-medium text-theme mb-0">{{ current_user.name }}</p>
+                </div>
+                <div class="mb-4">
+                    <label class="text-muted small text-uppercase fw-bold mb-1">Email</label>
+                    <p class="fs-5 fw-medium text-theme mb-0">{{ current_user.email }}</p>
+                </div>
+                <div>
+                    <label class="text-muted small text-uppercase fw-bold mb-2">Role</label>
+                    <div>
+                        <span class="badge rounded-pill px-3 py-2 fs-6"
+                            style="background: rgba(130, 71, 229, 0.2); color: #B794F6; border: 1px solid rgba(130, 71, 229, 0.3);">
+                            <i class="bi bi-shield-check me-1"></i> {{ current_user.role|capitalize }}
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="col-md-8 mb-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-header bg-white">
-                <h5 class="mb-0">Your Gemini API Key</h5>
+        <div class="card shadow-lg h-100 border-0 rounded-4"
+            style="background: var(--card-bg); backdrop-filter: blur(20px);">
+            <div class="card-header bg-transparent border-bottom py-4 px-4"
+                style="border-color: var(--border-color) !important;">
+                <h4 class="mb-0 fw-bold d-flex align-items-center">
+                    <i class="bi bi-key text-info me-2"></i> API Configuration
+                </h4>
             </div>
-            <div class="card-body">
+            <div class="card-body p-4 p-md-5">
                 <form method="POST" action="{{ url_for('profile.settings') }}">
                     {{ form.hidden_tag() }}
-                    <div class="mb-3">
-                        <label class="form-label d-block">Current Key Status</label>
-                        {% if current_user.has_api_key() %}
-                        <span class="badge bg-success p-2 mb-3">
-                            <i class="bi bi-check-circle me-1"></i> Key saved
-                        </span>
-                        {% else %}
-                        <span class="badge bg-warning text-dark p-2 mb-3">
-                            <i class="bi bi-exclamation-triangle me-1"></i> Not set
-                        </span>
-                        {% endif %}
+                    <div class="d-flex align-items-center justify-content-between mb-4 p-3 rounded-3"
+                        style="background: var(--bg-base); border: 1px solid var(--border-color);">
+                        <div>
+                            <strong class="d-block text-theme mb-1">API Key Status</strong>
+                            <span class="text-muted small">Required for document analysis</span>
+                        </div>
+                        <div>
+                            {% if current_user.has_api_key() %}
+                            <span class="badge rounded-pill px-3 py-2"
+                                style="background: rgba(25, 135, 84, 0.15); color: #a3cfbb; border: 1px solid rgba(25, 135, 84, 0.3);">
+                                <i class="bi bi-check-circle-fill me-1"></i> Active
+                            </span>
+                            {% else %}
+                            <span class="badge rounded-pill px-3 py-2"
+                                style="background: rgba(255, 193, 7, 0.15); color: #ffe69c; border: 1px solid rgba(255, 193, 7, 0.3);">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> Missing
+                            </span>
+                            {% endif %}
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        {{ form.gemini_api_key.label(class="form-label") }}
-                        {{ form.gemini_api_key(class="form-control", placeholder="Enter your Gemini API key") }}
+                    <div class="mb-4">
+                        {{ form.gemini_api_key.label(class="form-label text-muted small text-uppercase fw-bold") }}
+                        {{ form.gemini_api_key(class="form-control form-control-lg", placeholder="Enter your Gemini API
+                        key") }}
                         {% for error in form.gemini_api_key.errors %}
-                        <div class="text-danger small">{{ error }}</div>
+                        <div class="text-danger small mt-1"><i class="bi bi-x-circle me-1"></i>{{ error }}</div>
                         {% endfor %}
                     </div>
 
-                    <div class="mb-3">
-                        <small class="text-muted">
-                            <i class="bi bi-info-circle me-1"></i>
-                            Your API key is used only to power your chat sessions and is
-                            stored securely for your use only.
-                        </small>
-                    </div>
-                    <div class="mb-5">
-                        <small>Need a key? <a href="https://aistudio.google.com/app/apikey" target="_blank">Get your
-                                free API key at Google AI Studio</a></small>
+                    <div class="mb-4">
+                        {{ form.pinecone_api_key.label(class="form-label text-muted small text-uppercase fw-bold") }}
+                        {{ form.pinecone_api_key(class="form-control form-control-lg", placeholder="Enter your Pinecone
+                        API key") }}
+                        {% for error in form.pinecone_api_key.errors %}
+                        <div class="text-danger small mt-1"><i class="bi bi-x-circle me-1"></i>{{ error }}</div>
+                        {% endfor %}
                     </div>
 
-                    <div class="d-grid">
-                        {{ form.submit(class="btn btn-primary") }}
+                    <div class="mb-4">
+                        {{ form.pinecone_index_name.label(class="form-label text-muted small text-uppercase fw-bold") }}
+                        {{ form.pinecone_index_name(class="form-control form-control-lg", placeholder="Enter your
+                        Pinecone Index Name") }}
+                        {% for error in form.pinecone_index_name.errors %}
+                        <div class="text-danger small mt-1"><i class="bi bi-x-circle me-1"></i>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="alert border-0 d-flex align-items-start mb-4"
+                        style="background: rgba(0, 225, 255, 0.05); border-left: 4px solid var(--brand-secondary) !important;">
+                        <i class="bi bi-info-circle-fill text-info fs-5 me-3 mt-1"></i>
+                        <div>
+                            <p class="mb-1 text-theme fw-medium">Secure Storage</p>
+                            <small class="text-muted d-block mb-2">Your API key is encrypted and used exclusively for
+                                your chat sessions.</small>
+                            <small class="d-block">
+                                <a href="https://aistudio.google.com/app/apikey" target="_blank"
+                                    class="fw-bold d-inline-flex align-items-center"
+                                    style="color: var(--brand-secondary); text-decoration: none;">
+                                    Get your free API key at Google AI Studio <i
+                                        class="bi bi-box-arrow-up-right ms-1 small"></i>
+                                </a>
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary btn-lg rounded-pill shadow-sm py-3 fw-bold") }}
                     </div>
                 </form>
 
                 {% if current_user.has_api_key() %}
-                <hr class="my-4">
-                <form method="POST" action="{{ url_for('profile.delete_key') }}"
-                    onsubmit="return confirm('Are you sure you want to delete your API key? You will not be able to chat with documents until you provide a new one.');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-outline-danger">
-                            <i class="bi bi-trash"></i> Delete API Key
-                        </button>
-                    </div>
-                </form>
+                <hr class="my-5 opacity-25" style="border-color: var(--border-color);">
+                <div class="p-4 rounded-4"
+                    style="background: rgba(220, 53, 69, 0.05); border: 1px solid rgba(220, 53, 69, 0.2);">
+                    <h5 class="text-danger fw-bold mb-3"><i class="bi bi-exclamation-octagon me-2"></i>Danger Zone</h5>
+                    <p class="text-muted small mb-4">Deleting your API key will immediately revoke access to Document
+                        Chat features.</p>
+
+                    <form method="POST" action="{{ url_for('profile.delete_key') }}"
+                        onsubmit="return confirm('Are you sure you want to delete your API key? You will not be able to chat with documents until you provide a new one.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-outline-danger btn-lg rounded-pill">
+                                <i class="bi bi-trash-fill me-2"></i>Remove API Key
+                            </button>
+                        </div>
+                    </form>
+                </div>
                 {% endif %}
             </div>
         </div>

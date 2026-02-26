@@ -14,6 +14,8 @@ class User(db.Model, UserMixin):
     
     # User's own Gemini API key — stored as plain text for dev purposes
     gemini_api_key = db.Column(db.String(500), nullable=True)
+    pinecone_api_key = db.Column(db.String(500), nullable=True)
+    pinecone_index_name = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
 
@@ -33,6 +35,9 @@ class User(db.Model, UserMixin):
 
     def has_api_key(self):
         return bool(self.gemini_api_key)
+
+    def has_pinecone_configured(self):
+        return bool(self.pinecone_api_key and self.pinecone_index_name)
 
     def to_dict(self):
         return {
