@@ -67,6 +67,7 @@ We need to add the same variables you have in your `.env` file into the Azure se
    * **Name**: `FLASK_ENV` | **Value**: `production`
    * **Name**: `FLASK_SECRET_KEY` | **Value**: *(Generate a strong random password/hash and paste it here)*
    * **Name**: `SCM_DO_BUILD_DURING_DEPLOYMENT` | **Value**: `true` (Tells Azure to run pip install).
+   * **Name**: `WEBSITES_CONTAINER_START_TIME_LIMIT` | **Value**: `1800` (Increases the container startup timeout to 30 minutes, giving Hugging Face models enough time to download).
 
 *(Note: You do NOT need to put Pinecone or Gemini API keys here anymore because users enter those securely in the application Settings GUI!)*
 
@@ -88,7 +89,8 @@ The first time you boot the Azure app, it will lack the database tables. Luckily
 * In the left sidebar, click **SSH** under Development Tools, and click `Go ->`.
 * Run:
   ```bash
-  python -m flask db upgrade
+  cd /home/site/wwwroot
+  FLASK_APP=run.py python -m flask db upgrade
   ```
 This creates the tables mapped locally in the `/home/document_chatbot.db` file.
 
