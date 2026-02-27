@@ -87,11 +87,76 @@ During deployment, if you get an "Application Error", it's usually because Azure
 **3. Database Initialization (Important final step!)**
 The first time you boot the Azure app, it will lack the database tables. Luckily, because we integrated Flask-Migrate, it will create it on boot, but you may need to SSH in to create the database yourself using SSH:
 * In the left sidebar, click **SSH** under Development Tools, and click `Go ->`.
-* Run:
   ```bash
-  cd /home/site/wwwroot
-  FLASK_APP=run.py python -m flask db upgrade
+  cd $APP_PATH
+  python -c "import os; os.environ['FLASK_APP']='run.py'; from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()"
   ```
-This creates the tables mapped locally in the `/home/document_chatbot.db` file.
+  *(Note: Because Azure builds your app in a temporary `/tmp/...` folder during startup, `$APP_PATH` ensures you are in the correct folder to run the script. The database file itself will still correctly save to the persistent `/home` drive).*
 
 You're done! The app is now fully hosted on Azure Linux and will persist your database and file uploads as long as the App Service is running.
+
+---
+
+## 🔐 Configuring Google OAuth for Production
+
+Right now, your Google login button will probably fail on the live site because Google only recognizes your local `http://localhost:5000` address. You need to tell Google your new Azure URL!
+
+### Step 1: Update Google Cloud Console
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Make sure you have the correct project selected in the top dropdown.
+3. In the left sidebar, navigate to **APIs & Services** > **Credentials**.
+4. Under the "OAuth 2.0 Client IDs" section, click the pencil icon to edit your existing web client.
+5. Under **Authorized JavaScript origins**, click "Add URI" and paste your Azure URL (exactly as it appears):
+   * `https://docchatrag-f4cpaubbcfgcazfk.centralindia-01.azurewebsites.net`
+6. Under **Authorized redirect URIs**, click "Add URI" and paste your Azure URL **plus the callback path**:
+   * `https://docchatrag-f4cpaubbcfgcazfk.centralindia-01.azurewebsites.net/auth/google/callback`
+7. Click **Save** at the bottom.
+
+### Step 2: Update Azure App Settings
+You must also update the environment variable in Azure so your Flask app knows where to send users back to.
+1. Go back to your Web App in the **Azure Portal**.
+2. Click **Environment variables** in the left sidebar.
+3. Find your `GOOGLE_REDIRECT_URI` setting and edit it.
+4. Replace the `localhost` URL with your new live callback URL:
+   * `https://docchatrag-f4cpaubbcfgcazfk.centralindia-01.azurewebsites.net/auth/google/callback`
+5. Click **Apply** at the bottom, and then **Apply/Save** at the top.
+
+*Note: Changes in the Google Cloud console can sometimes take 5-10 minutes to propagate across their servers. If Google gives you an "URI mismatch" error immediately after saving, just wait a few minutes and try clicking the Sign-in button again!*
+
+---
+
+## 🌐 Binding a Custom Domain
+
+If you own a domain name (like `mychatbot.com`) and want to connect it to your Azure App (`your-app-name.azurewebsites.net`), follow these steps:
+
+**Important Prerequisites:**
+* Your App Service plan **cannot** be on the Free (F1) tier. Custom domains require **Basic (B1)** tier or higher. If you are on F1, you must click "Scale up" in the Azure sidebar and upgrade to B1 first.
+* You need access to the DNS settings of your domain registrar (GoDaddy, Namecheap, Cloudflare, etc.).
+
+### Step 1: Add the Domain in Azure
+1. In your Azure Web App sidebar, click **Custom domains** (under the Settings section).
+2. Click **+ Add custom domain**.
+3. In the right pane, select **App Service Managed Certificate** (this gives you free SSL).
+4. For "TLS/SSL type", select **SNI SSL**.
+5. Enter your domain name in the text box (e.g., `www.mychatbot.com` or `mychatbot.com`).
+
+### Step 2: Configure your DNS Records
+Azure will then show you **two records** that you must add to your domain registrar to prove you own the domain. Keep this Azure window open!
+
+Open a new tab, log into your domain registrar (GoDaddy, Cloudflare, etc.), go to DNS Management, and add the two records Azure gave you:
+
+**Types of records Azure will ask for:**
+1. A **TXT Record** (Used to verify domain ownership):
+   * **Host/Name:** `asuid` (or your subdomain like `asuid.www`)
+   * **Value/Data:** The long ID string Azure provides.
+2. A **CNAME or A Record** (Used to route the traffic):
+   * **If using a subdomain (like www.mychatbot.com):** Create a **CNAME** record where the Name is `www` and the Value is `your-app-name.azurewebsites.net`.
+   * **If using a root domain (like mychatbot.com):** Create an **A** record where the Name is `@` and the Value is the IP address Azure provides.
+
+### Step 3: Validate and Add
+1. Go back to the Azure window.
+2. Click the **Validate** button at the bottom.
+3. If your DNS records were entered correctly (and have propagated across the internet, which can sometimes take 5-15 minutes), Azure will show green checkmarks.
+4. Click **Add**.
+
+Your custom domain is now bound to the app with a free managed SSL certificate!
