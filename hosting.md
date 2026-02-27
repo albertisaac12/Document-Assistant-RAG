@@ -93,15 +93,15 @@ During deployment, if you get an "Application Error", it's usually because Azure
 * To see exactly what the server is doing: Go to **Log stream** in the left sidebar to watch the raw container logs.
 
 **3. Database Initialization (Important final step!)**
-The first time you boot the Azure app, it will lack the database tables. Luckily, because we integrated Flask-Migrate, it will create it on boot, but you may need to SSH in to create the database yourself using SSH:
+The first time you boot the Azure app (or anytime the container restarts during your 10-day evaluation), it will lack the database tables. You must SSH in to create the database yourself:
 * In the left sidebar, click **SSH** under Development Tools, and click `Go ->`.
   ```bash
   cd $APP_PATH
   python -c "import os; os.environ['FLASK_APP']='run.py'; from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()"
   ```
-  *(Note: Because Azure builds your app in a temporary `/tmp/...` folder during startup, `$APP_PATH` ensures you are in the correct folder to run the script. The database file itself will still correctly save to the persistent `/home` drive).*
+  *(Note: Because Azure builds your app in a temporary `/tmp/...` folder during startup, `$APP_PATH` ensures you are in the correct folder to run the script. The database file itself will then be generated in `/tmp/document_chatbot.db` due to our Azure logic).*
 
-You're done! The app is now fully hosted on Azure Linux and will persist your database and file uploads as long as the App Service is running.
+You're done! The app is now fully hosted on Azure Linux. Remember: **Because you are using `/tmp` to avoid SQLite file locks, your database and file uploads will be wiped if the Azure container restarts.** This is a temporary setup purely for your 10-day evaluation.
 
 ---
 
