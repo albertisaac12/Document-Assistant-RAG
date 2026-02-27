@@ -60,4 +60,8 @@ def create_app(config_class=Config):
         from flask import render_template
         return render_template('errors/500.html'), 500
 
+    @app.route('/health')
+    def health():
+        return "OK", 200
+
     return app

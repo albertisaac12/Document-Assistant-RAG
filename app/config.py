@@ -7,9 +7,9 @@ class Config:
     # Enable Azure-specific overrides for persistence
     # Azure App Service sets 'WEBSITE_SITE_NAME' automatically
     if os.environ.get('WEBSITE_SITE_NAME'):
-        # Persist database in /home folder mapped to blob storage
-        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:////home/document_chatbot.db')
-        UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', '/home/uploads')
+        # Persist database in /tmp folder to avoid SMB file lock issues on Azure /home
+        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:////tmp/document_chatbot.db')
+        UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', '/tmp/uploads')
     else:
         # Standard local deployment
         SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///document_chatbot.db')

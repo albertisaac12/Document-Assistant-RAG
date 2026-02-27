@@ -5,8 +5,9 @@ This guide walks you through deploying this Flask document RAG application to **
 ## Architecture
 
 * **Web Hosting**: Azure App Service (Linux Environment).
-* **Database**: SQLite. The database file will be stored in `/home/document_chatbot.db`. Azure App Service mounts `/home` to a persistent shared SMB drive, so your data will survive app restarts.
-* **Document Storage**: Uploaded files (PDFs, TXT) will also be persisted to `/home/uploads`.
+* **Database**: SQLite. The database file will be stored in `/tmp/document_chatbot.db` to prevent SMB file locking issues during the short 10-day evaluation.
+* **Document Storage**: Uploaded files (PDFs, TXT) will also be persisted to `/tmp/uploads`.
+  > **Note:** Because `/tmp` is wiped when the Azure container resarts, your accounts and chat history will be lost if the server goes down. This setup is specifically optimized for a quick 10-day evaluation.
 * **Vector Store**: Pinecone (managed via API, no hosting needed here).
 * **LLM**: Google Gemini (managed via API, no hosting needed here).
 
@@ -68,10 +69,17 @@ We need to add the same variables you have in your `.env` file into the Azure se
    * **Name**: `FLASK_SECRET_KEY` | **Value**: *(Generate a strong random password/hash and paste it here)*
    * **Name**: `SCM_DO_BUILD_DURING_DEPLOYMENT` | **Value**: `true` (Tells Azure to run pip install).
    * **Name**: `WEBSITES_CONTAINER_START_TIME_LIMIT` | **Value**: `1800` (Increases the container startup timeout to 30 minutes, giving Hugging Face models enough time to download).
+   * **Name**: `WEBSITES_PORT` | **Value**: `8000` (Tells Azure which port Gunicorn is listening on).
 
 *(Note: You do NOT need to put Pinecone or Gemini API keys here anymore because users enter those securely in the application Settings GUI!)*
 
 3. Click **Save**.
+
+### Step 5: Configure Health Checks (Recommended)
+1. Go to the **Health checks** tab under the **Monitoring** section in the left sidebar.
+2. Click **Enable**.
+3. Set the **Path** to `/health` (This is a lightweight endpoint we added to prevent Azure timeouts).
+4. Click **Save**.
 
 ---
 
